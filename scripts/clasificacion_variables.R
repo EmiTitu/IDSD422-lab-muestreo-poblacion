@@ -1,72 +1,60 @@
-# clasificacion_variables.R — Parte A: clasificación de las variables de clientes.csv.
-#
-# El archivo data/clientes.csv tiene 12 clientes y 7 variables (más el id).
-# El objetivo: clasificar cada variable (numérica continua/discreta, categórica
-# binaria/ordinal/nominal) y verificar la clasificación en código.
-#
-# Regla del capítulo 3: el tipo que infiere el lenguaje es una pista, no la
-# clasificación — el criterio (¿tiene sentido la mitad del valor? ¿hay orden
-# entre las categorías?) decide.
-#
-# Uso (desde la raíz del repositorio):  Rscript scripts/clasificacion_variables.R
+%load_ext rpy2.ipython
 
-clientes <- read.csv("data/clientes.csv", stringsAsFactors = FALSE)
+%%R
+# clasificacion_variables.R — Parte A: clasificación de las variables de clientes.csv.
+
+url_clientes <- "https://raw.githubusercontent.com/EmiTitu/IDSD422-lab-muestreo-poblacion/main/data/clientes.csv"
+clientes <- read.csv(url_clientes, stringsAsFactors = FALSE)
 
 # ---------------------------------------------------------------------------
 # 1. Estructura del archivo
-# ---------------------------------------------------------------------------
 cat(sprintf("Dimensiones: %d filas × %d columnas\n", nrow(clientes), ncol(clientes)))
 print(clientes)
+cat("\n")
 
 # ---------------------------------------------------------------------------
-# 2. Tipos inferidos (str) — la pista que da el lenguaje
-# ---------------------------------------------------------------------------
+# 2. Tipos inferidos (str)
 str(clientes)
-# TODO 1: ¿qué columnas llegan como número (int) y cuáles como texto
-#         (character)? Anótalo para el informe. Ojo con satisfaccion: llega
-#         como número y es ordinal ("4 no es el doble de 2") — la justificación
-#         va en el informe.
+cat("\n")
 
 # ---------------------------------------------------------------------------
 # 3. Valores únicos — ¿cuántas categorías hay y cuáles son?
-# ---------------------------------------------------------------------------
-# TODO 2: completa el bucle para imprimir, por columna, cuántos valores únicos
-#         hay y cuáles son. Pista: for (columna in names(clientes)) { ... } con
-#         unique() y length(). ¿Cuántas categorías tiene genero?
-# for (columna in names(clientes)) {
-#   ...
-# }
+for (columna in names(clientes)) {
+  unicos <- unique(clientes[[columna]])
+  cat(sprintf("Columna '%s' (%d únicos): %s\n", columna, length(unicos), paste(unicos, collapse = ", ")))
+}
+cat("\n")
 
 # ---------------------------------------------------------------------------
 # 4. Declarar el orden de las variables ordinales
-# ---------------------------------------------------------------------------
-# Una ordinal se guarda como texto y su orden natural se pierde: alfabéticamente
-# "Posgrado" iría antes que "Primaria", que no tiene sentido. En R, eso se
-# declara con el factor ordenado.
-#
-# TODO 3: convierte nivel_educacion con factor(..., levels = c(...), ordered = TRUE).
-#         Comprueba con min(): debe devolver "Primaria".
-# TODO 4: haz lo mismo con satisfaccion (escala 1–5 como etiquetas ordenadas).
-#         Prueba extra: ¿qué pasa si en levels escribes "Postgrado" (con t) para
-#         nivel_educacion? Cuenta los faltantes con sum(is.na(...)) — la trampa
-#         del typo es silenciosa.
+clientes$nivel_educacion <- factor(
+  clientes$nivel_educacion,
+  levels = c("Primaria", "Secundaria", "Superior", "Posgrado"),
+  ordered = TRUE
+)
+cat("Nivel educación ordenado (min):", as.character(min(clientes$nivel_educacion)), "\n")
+
+clientes$satisfaccion <- factor(
+  clientes$satisfaccion,
+  levels = c(1, 2, 3, 4, 5),
+  ordered = TRUE
+)
+cat("Satisfacción ordenada (min):", as.character(min(clientes$satisfaccion)), "\n")
+cat("\n")
 
 # ---------------------------------------------------------------------------
 # 5. Resumen de la clasificación (para el informe)
-# ---------------------------------------------------------------------------
-# TODO 5: completa el resumen con el tipo de cada variable (el criterio que
-#         justifica cada clasificación va en el informe).
 clasificacion <- c(
-  cliente_id         = "…",
-  edad               = "…",
-  numero_hijos       = "…",
-  genero             = "…",
-  nivel_educacion    = "…",
-  ciudad             = "…",
-  ingresos_mensuales = "…",
-  satisfaccion       = "…"
+  cliente_id         = "Cualitativa nominal (Identificador)",
+  edad               = "Cuantitativa discreta",
+  numero_hijos       = "Cuantitativa discreta",
+  genero             = "Cualitativa nominal",
+  nivel_educacion    = "Cualitativa ordinal",
+  ciudad             = "Cualitativa nominal",
+  ingresos_mensuales = "Cuantitativa continua",
+  satisfaccion       = "Cualitativa ordinal"
 )
-cat("\nResumen de la clasificación (para el informe):\n")
+cat("Resumen de la clasificación (para el informe):\n")
 for (variable in names(clasificacion)) {
   cat(sprintf("  %-18s %s\n", variable, clasificacion[[variable]]))
 }

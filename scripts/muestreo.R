@@ -1,17 +1,14 @@
+%load_ext rpy2.ipython
+%%R
 # muestreo.R — Parte B: población vs. muestra (RetailAndina).
 #
 # La población es la base completa de fidelización: data/clientes_400.csv (N = 400).
 # La pregunta de negocio: ¿cuál es el ingreso mensual promedio de los clientes?
-# Se estima con tres diseños de muestreo y se compara cada estimación con el
-# parámetro real, que aquí sí se conoce porque la población es pequeña y visible.
-#
-# Uso (desde la raíz del repositorio):  Rscript scripts/muestreo.R
 
-poblacion <- read.csv("data/clientes_400.csv")
+url_400 <- "https://raw.githubusercontent.com/EmiTitu/IDSD422-lab-muestreo-poblacion/main/data/clientes_400.csv"
+poblacion <- read.csv(url_400)
 
 reporte <- function(nombre, muestra, parametro) {
-  # Imprime n, media estimada y composición por ciudad de una muestra.
-  # La composición por ciudad es la pista que delata un sesgo de selección.
   if (is.null(muestra)) {
     cat(sprintf("[%s] pendiente de completar (TODO)\n", nombre))
     return(invisible(NULL))
@@ -26,43 +23,29 @@ reporte <- function(nombre, muestra, parametro) {
 # ---------------------------------------------------------------------------
 # 1. La población y su parámetro (N = 400)
 # ---------------------------------------------------------------------------
-# La base de fidelización completa es la población: 400 clientes. El parámetro
-# es el ingreso mensual promedio real (solo calculable porque la población es
-# pequeña y accesible: sirve de espejo para juzgar las muestras).
 cat(sprintf("Población: %d clientes × %d columnas\n", nrow(poblacion), ncol(poblacion)))
 parametro <- mean(poblacion$ingresos_mensuales)
 cat(sprintf("Parámetro poblacional — ingreso medio: %.2f USD\n", parametro))
 cat("Ciudades en la población: "); print(table(poblacion$ciudad))
+cat("\n")
 
 # ---------------------------------------------------------------------------
 # 2. Muestra por conveniencia: "los primeros que llegaron"
 # ---------------------------------------------------------------------------
-# TODO 1: toma como muestra las primeras 20 filas de la población.
-#         Pista: head(poblacion, 20) — igual que la demo de clase.
-#         Después de correrlo, mira la composición por ciudad que imprime el
-#         reporte: ¿es un corte al azar? ¿alguna ciudad falta por completo?
-muestra_conv <- NULL
+muestra_conv <- head(poblacion, 20)
 
 # ---------------------------------------------------------------------------
 # 3. Muestra aleatoria simple: el sorteo de 20
 # ---------------------------------------------------------------------------
-# TODO 2: sortea 20 clientes con la misma probabilidad para todos (20/400 = 5 %).
-#         Pista: poblacion[sample(nrow(poblacion), 20), ] con set.seed(1)
-#         delante para que sea reproducible (sin set.seed cambia cada vez).
-# TODO 3: repite el sorteo con las semillas 2 a 5 y anota las 5 medias en el
-#         informe: la variabilidad de la estimación es parte de la lección.
-#         Pista: for (semilla in 1:5) { set.seed(semilla); ... }
-muestra_aas <- NULL
+set.seed(1)
+muestra_aas <- poblacion[sample(nrow(poblacion), 20), ]
 
 # ---------------------------------------------------------------------------
 # 4. Muestra estratificada: 5 % dentro de cada ciudad
 # ---------------------------------------------------------------------------
-# TODO 4: muestrea dentro de cada ciudad (el estrato), con afijación
-#         proporcional: 5 % de cada una → 10 de Quito, 6 de Guayaquil y 4 de
-#         Cuenca (20 en total).
-#         Pista: library(dplyr); poblacion |> group_by(ciudad) |> slice_sample(prop = 0.05)
-#         ¿Qué garantiza este diseño que el sorteo simple no garantiza?
-muestra_est <- NULL
+suppressPackageStartupMessages(library(dplyr))
+set.seed(1)
+muestra_est <- poblacion |> group_by(ciudad) |> slice_sample(prop = 0.05)
 
 # ---------------------------------------------------------------------------
 # 5. Comparación final
@@ -70,6 +53,7 @@ muestra_est <- NULL
 reporte("Conveniencia", muestra_conv, parametro)
 reporte("Aleatorio simple", muestra_aas, parametro)
 reporte("Estratificado", muestra_est, parametro)
+cat("\n")
 
 if (!is.null(muestra_conv) && !is.null(muestra_aas) && !is.null(muestra_est)) {
   resumen <- data.frame(
